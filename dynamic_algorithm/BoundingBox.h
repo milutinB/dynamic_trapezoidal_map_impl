@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Cut.h"
+#include <CGAL/Polygon_2.h>
+
+typedef CGAL::Polygon_2<Kernel> Polygon_2;
 
 enum TrapezoidType { BRTL, BTL, BRT };
 
