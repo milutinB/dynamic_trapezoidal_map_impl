@@ -43,5 +43,26 @@ struct Tree
 
 	// Updates the search tree due to the
 	// addition of the new segment
+        //
+        // 1. Locate all sub-trees whose roots have higher prio and intersect segment. Store them left-to-right.
+
+        // 2. For each such node u left-to-right
+        
+        //      * Determine LeafDestructionPattern
+        //      * Push the newly created Cuts to leaf_destruction_cuts
+        //      * do the vPartition calls on u in respect to the pattern:
+        // 
+        //      * Copy over the contents of u in a temporary node v, make u a leaf by clearing its content.
+        //      * Cut the leaf: assign it to the vertical cut and allocate new child nodes;
+        //      * vPart(v,cut, u-,u+).
+        //      * If the resulting region is not properly intersected by s, we are done.
+        //
+        //      * Copy over the contents of u in a temporary node v, make u a leaf by clearing its content.
+        //      * Cut the leaf: assign it to the vertical cut and allocate new child nodes;
+        //      * vPart(v,cut, u-,u+).
+        //      * If the resulting region is not properly intersected by s, we are done.
+        //      
+        //      * Partition
+
 	void insert(Segment* segment);
 };
