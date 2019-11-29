@@ -607,6 +607,39 @@ void Tree::insert(Segment* segment)
 			leaf->cut->type = SEGMENT_INTERSECTION;
 			leaf->cut->segment = segment;
 			Line_2 line = Line_2(leaf->cut->segment->seg);
+			
+			if (check_for_proper_intersection(bottom_top[0], segment->seg)) 
+			{
+				if (check_for_proper_intersection(bottom_top[1], segment->seg)) 
+				{
+					Point_2 bottom_intersection = intersect_segments(bottom_top[0], segment->seg);
+					Point_2 top_intersection = intersect_segments(bottom_top[1], segment->seg);
+
+					if (bottom_intersection.x() < top_intersection.x()) 
+					{
+						leaf->cut->intersecting_segment = bounding_box.bottom->segment;
+					}
+					else 
+					{
+						leaf->cut->intersecting_segment = bounding_box.top->segment;
+					}
+				}
+				else 
+				{
+					leaf->cut->intersecting_segment = bounding_box.bottom->segment;
+				}
+			}
+			else if (check_for_proper_intersection(bottom_top[1], segment->seg))
+			{
+				leaf->cut->intersecting_segment = bounding_box.top->segment;
+			}
+			else 
+			{
+				std::cout << "\n expected segment intersection, none found \n";
+				exit(0);
+			}
+			
+			/*
 			if (slope_of_line(line) > 0)
 			{
 				if (check_for_proper_intersection(bottom_top[0], segment->seg))
@@ -630,7 +663,7 @@ void Tree::insert(Segment* segment)
 				{
 					leaf->cut->intersecting_segment = bounding_box.bottom->segment;
 				}
-			}
+			}*/
 		}
 
 		if (type == NONE)
@@ -707,6 +740,7 @@ void Tree::insert(Segment* segment)
 
 		nodes.push_back(nodes_to_be_partitioned[i]->positive_child);
 	}
+	
 	if (!is_valid(root))
 	{
 		std::cout << "\n naive tree is not valid \n";
@@ -773,6 +807,18 @@ bool Tree::is_valid(Node* node)
 		return true;
 	}
 
+	if (node->positive_child->parent != node) 
+	{
+		std::cout << "\n positive child does not point to parent \n";
+		exit(0);
+	}
+
+	if (node->negative_child->parent != node) 
+	{
+		std::cout << "\n negative child does not point to parent \n";
+		exit(0);
+	}
+
 	if (node->cut->type == SEGMENT) 
 	{
 		if (node->positive_child->priority() <= node->priority() || node->negative_child->priority() <= node->priority())
@@ -793,6 +839,7 @@ bool Tree::is_valid(Node* node)
 
 		return is_valid(node->positive_child) && is_valid(node->negative_child);
 	}
+	
 }
 
 Node* Tree::deepest_node_containing_segment(Node* node, Segment* segment) 
@@ -3124,6 +3171,7 @@ void Tree::insert_into_node(Node* node, Segment* segment, vector<Cut*> cuts)
 		v_partition_priority(node->positive_child, cuts[1]);
 		partition_priority(node->positive_child->negative_child, cuts[2]);
 	}
+	
 	
 	if (!is_valid(root)) 
 	{
