@@ -20,6 +20,10 @@ struct Tree
 
 	int seg_count = 0;
 
+	int v_merge_calls = 0;
+	int v_partition_calls = 0;
+	int partition_calls = 0;
+
 	// Returns the bounding box of the given node.
 	// The bounding box is a struct containing the cuts
 	// that define the region of the node.

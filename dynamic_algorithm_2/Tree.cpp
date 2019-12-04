@@ -3,6 +3,8 @@
 #include "Tree.h"
 #include <CGAL/Direction_2.h>
 
+#define CHECKING 0
+
 typedef CGAL::Direction_2<Kernel> Direction_2;
 
 bool complete_bounding_box(BoundingBox* bounding_box)
@@ -741,11 +743,12 @@ void Tree::insert(Segment* segment)
 		nodes.push_back(nodes_to_be_partitioned[i]->positive_child);
 	}
 	
-	if (!is_valid(root))
-	{
-		std::cout << "\n naive tree is not valid \n";
-		exit(0);
-	}
+	if (CHECKING >= 100)
+		if (!is_valid(root))
+		{
+			std::cout << "\n naive tree is not valid \n";
+			exit(0);
+		}
 }
 
 bool Tree::is_equal(Tree* other_tree)
@@ -1964,7 +1967,6 @@ void Tree::partition_priority(Node* node, Cut* cut)
 				merge_left_below->parent = t_negative;
 				t_negative->negative_child = merge_left_below;
 
-
 				node->positive_child = t_positive;
 				node->negative_child = t_negative;
 				node->cut = cut;
@@ -3173,11 +3175,12 @@ void Tree::insert_into_node(Node* node, Segment* segment, vector<Cut*> cuts)
 	}
 	
 	
-	if (!is_valid(root)) 
-	{
-		std::cout << "\n dynamic tree is not valid \n";
-		exit(0);
-	}
+	if (CHECKING >= 100)
+		if (!is_valid(root)) 
+		{
+			std::cout << "\n dynamic tree is not valid \n";
+			exit(0);
+		}
 }
 
 void Tree::insert_with_priority(Segment* segment) 
