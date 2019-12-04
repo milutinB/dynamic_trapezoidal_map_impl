@@ -8,6 +8,9 @@
 #include <CGAL/Segment_2.h>
 #include <CGAL/Line_2.h>
 #include <CGAL/Vector_2.h>
+#include <CGAL/Direction_2.h>
+#include <CGAL/Aff_transformation_2.h>
+#include <CGAL/aff_transformation_tags.h>
 //#include "Cut.h"
 
 
@@ -16,7 +19,8 @@ typedef CGAL::Point_2<Kernel> Point_2;
 typedef CGAL::Segment_2<Kernel> Segment_2;
 typedef CGAL::Line_2<Kernel> Line_2;
 typedef CGAL::Vector_2<Kernel> Vector_2;
-
+typedef CGAL::Direction_2<Kernel> Direction_2;
+typedef CGAL::Aff_transformation_2<Kernel> Transformation;
 
 using namespace std;
 

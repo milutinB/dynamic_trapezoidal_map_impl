@@ -138,10 +138,8 @@ bool is_valid_input(vector<Segment> segments)
 	return true;
 }
 
-void experiment(Tree* tree, int input_size, std::string type, int seed) 
+void experiment(Tree* tree, int input_size, std::string type, int seed, int step_size) 
 {
-	
-	std::cout << "\n hello from experiment \n";
 	vector<Segment> segments;
 
 	if (type == "many") 
@@ -190,6 +188,8 @@ void experiment(Tree* tree, int input_size, std::string type, int seed)
 	naive_tree->enclosing_box = tree->enclosing_box;
 	naive_tree->root = new Node();
 
+	naive_tree->step_size = step_size;
+
 	naive_tree->dynamic_insert_stats.open("static_insert_stats.dat", 'w');
 	naive_tree->dynamic_insert_stats << "# static inserts of 1000 segments, segments with random endpoints, seed=1337\n";
 	naive_tree->dynamic_insert_stats << "# segments" << "\t";
@@ -216,6 +216,8 @@ void experiment(Tree* tree, int input_size, std::string type, int seed)
 
 	std::random_shuffle(segments.begin(), segments.end());
 
+	tree->step_size = step_size;
+
 	tree->dynamic_insert_stats.open("dynamic_insert_stats.dat", 'w');
 	tree->dynamic_insert_stats << "# dynamic inserts of 1000 segments, segments with random endpoints, seed=1337\n";
 	tree->dynamic_insert_stats << "# segments" << "\t";
@@ -240,6 +242,7 @@ void experiment(Tree* tree, int input_size, std::string type, int seed)
 
 	std::cout << "\n finished dynamic inserts \n";
 	
+	/*
 	if (tree->is_equal(naive_tree)) 
 	{
 		std::cout << "\n trees look the same \n";
@@ -255,7 +258,7 @@ void experiment(Tree* tree, int input_size, std::string type, int seed)
 
 	vector<Node*> static_leaves = vector<Node*>();
 	naive_tree->get_leaves_by_traversal(naive_tree->root, static_leaves);
-	naive_tree->dump_nodes("static_leaves.dat", static_leaves);
+	naive_tree->dump_nodes("static_leaves.dat", static_leaves);*/
 
 	
 }

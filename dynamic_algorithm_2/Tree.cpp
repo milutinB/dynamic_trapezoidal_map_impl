@@ -4,6 +4,8 @@
 #include <CGAL/Direction_2.h>
 
 #define CHECKING 0
+#define EXPERIMENTS 0
+//#define STEP_SIZE 1
 
 typedef CGAL::Direction_2<Kernel> Direction_2;
 
@@ -224,6 +226,18 @@ int Tree::depth(Node* node)
 	return max(depth(node->negative_child), depth(node->positive_child)) + 1;
 }
 
+int Tree::size(Node* node) 
+{
+	if (node->is_leaf()) 
+	{
+		return 0;
+	}
+	else 
+	{
+		return 1 + size(node->positive_child) + size(node->negative_child);
+	}
+}
+
 bool Tree::segment_intersects_region(Node* node, Segment* segment)
 {
 	BoundingBox bounding_box = get_bounding_box(node);
@@ -302,11 +316,11 @@ bool Tree::segment_intersects_region(Node* node, Segment* segment)
 
 void Tree::v_partition_naive(Node* node, Cut* vertical_cut)
 {
-	/*if () 
+	if (EXPERIMENTS == 1) 
 	{
+		v_partition_calls++;
+	}
 	
-	}*/
-
 	node->cut = vertical_cut;
 
 	node->negative_child = new Node();
@@ -318,6 +332,11 @@ void Tree::v_partition_naive(Node* node, Cut* vertical_cut)
 
 void Tree::partition_naive(Node* node, Segment* segment)
 {
+	if (EXPERIMENTS == 1) 
+	{
+		partition_calls++;
+	}
+
 	node->cut = new Cut();
 	node->cut->type = SEGMENT;
 	node->cut->segment = segment;
@@ -556,35 +575,34 @@ void Tree::naive_insert(Segment* segment)
 
 void Tree::insert(Segment* segment)
 {
+
+	clock_t start;
+	clock_t end;
+
+	if (EXPERIMENTS == 1) 
+	{
+		start = clock();
+		number_of_segments++;
+	}
+
 	seg_count++;
 
-	//vector<Node*> leaves = search(segment);
 	vector<Node*> leaves = search_with_priority(segment);
-
-	//dump_nodes("priority_search.dat", leaves);
+	int number_of_leaves = leaves.size();
 
 	vector<Node*> map = get_leaves();
-	//dump_nodes("tree" + std::to_string(map.size()) + ".dat", map);
-	//dump_nodes("leaves" + std::to_string(map.size()) + ".dat", leaves);
-	//cout << "search complete\n";
-	//cout << "found " << leaves.size() << " leaves\n";
 	vector<Node*> nodes_to_be_partitioned = vector<Node*>();
 
 
 	while (!leaves.empty())
 	{
-		//cout << "hello from insert\n";
-		//cout << leaves.size() << "\n";
-		//cout << segment->seg;
 		Node* leaf = leaves[leaves.size() - 1];
-		//cout << get_bounding_box(leaf);
 		leaves.pop_back();
 
 		CutType type = determine_vertical_cut_type(leaf, segment);
 
 		if (type == VERTICAL_SOURCE)
 		{
-			//cout << "VERTICAL SOURCE\n";
 			leaf->cut = new Cut();
 			leaf->cut->type = VERTICAL_SOURCE;
 			leaf->cut->segment = segment;
@@ -592,7 +610,6 @@ void Tree::insert(Segment* segment)
 
 		if (type == VERTICAL_TARGET)
 		{
-			//cout << "VERTICAL TARGET\n";
 			leaf->cut = new Cut();
 			leaf->cut->type = VERTICAL_TARGET;
 			leaf->cut->segment = segment;
@@ -600,8 +617,6 @@ void Tree::insert(Segment* segment)
 
 		if (type == SEGMENT_INTERSECTION)
 		{
-			//cout << "segment intersection \n";
-			//cout << Tree::get_bounding_box(leaf);
 			BoundingBox bounding_box = get_bounding_box(leaf);
 			vector<Segment_2> bottom_top = bounding_box.get_top_and_bottom_segments();
 
@@ -640,6 +655,7 @@ void Tree::insert(Segment* segment)
 				std::cout << "\n expected segment intersection, none found \n";
 				exit(0);
 			}
+
 			
 			/*
 			if (slope_of_line(line) > 0)
@@ -743,6 +759,29 @@ void Tree::insert(Segment* segment)
 		nodes.push_back(nodes_to_be_partitioned[i]->positive_child);
 	}
 	
+	if (EXPERIMENTS == 1 && number_of_segments % step_size == 0) 
+	{
+		end = clock();
+		dynamic_insert_stats << number_of_segments << "\t";
+		dynamic_insert_stats << segment->priority << "\t";
+		dynamic_insert_stats << number_of_leaves << "\t";
+		dynamic_insert_stats << size(root) << "\t";
+		dynamic_insert_stats << depth(root) << "\t";
+		dynamic_insert_stats << nodes_visited_in_search << "\t";
+		dynamic_insert_stats << v_partition_calls << "\t";
+		dynamic_insert_stats << partition_calls << "\t";
+		dynamic_insert_stats << v_merge_calls << "\t";
+		dynamic_insert_stats << "0\t";
+		dynamic_insert_stats << "0\t";
+		dynamic_insert_stats << (double)(end - start) / CLOCKS_PER_SEC << "\n";
+		//dynamic_insert_stats.close();
+
+		nodes_visited_in_search = 0;
+		v_partition_calls = 0;
+		partition_calls = 0;
+		v_merge_calls = 0;
+	}
+
 	if (CHECKING >= 100)
 		if (!is_valid(root))
 		{
@@ -847,6 +886,8 @@ bool Tree::is_valid(Node* node)
 
 Node* Tree::deepest_node_containing_segment(Node* node, Segment* segment) 
 {
+	if (EXPERIMENTS == 1)
+		nodes_visited_in_search++;
 
 	if (node->is_leaf() || node->priority() > segment->priority) 
 	{
@@ -890,9 +931,10 @@ vector<Node*> Tree::search_with_priority(Segment* segment)
 
 	while (!stack.empty()) 
 	{
-
+		if (EXPERIMENTS == 1)
+			nodes_visited_in_search++;
 		//count++;
-
+	
 		Node* top = stack.top();
 		stack.pop();
 
@@ -1105,6 +1147,13 @@ Subtrees Tree::retrieve_subtrees(Node* node)
 	return subtrees;
 }
 
+void Tree::increment_intersections() 
+{
+	if (EXPERIMENTS == 1) 
+	{
+		number_of_intersections++;
+	}
+}
 
 vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* vertical_source, Cut* vertical_target, Cut* segment_cut) 
 {
@@ -1139,6 +1188,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 					right->type = SEGMENT_INTERSECTION;
 					right->segment = segment;
 					right->intersecting_segment = bounding_box.bottom->segment;
+					increment_intersections();
 				}
 				else 
 				{
@@ -1159,6 +1209,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 					right->type = SEGMENT_INTERSECTION;
 					right->segment = segment;
 					right->intersecting_segment = bounding_box.top->segment;
+					increment_intersections();
 				}
 				else
 				{
@@ -1275,7 +1326,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 		right = new Cut();
 		right->type = SEGMENT_INTERSECTION;
 		right->segment = segment;
-		//std::cout << "\n ITNERSECTION!! !! !! \n";
+		increment_intersections();
 		if (check_for_proper_intersection(bottom_top[0], segment->seg)) 
 		{
 			right->intersecting_segment = bounding_box.bottom->segment;
@@ -1303,7 +1354,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 			left = new Cut();
 			left->type = SEGMENT_INTERSECTION;
 			left->segment = segment;
-			//std::cout << "\n ITNERSECTION!! !! !! \n";
+			increment_intersections();
 			if (check_for_proper_intersection(bottom_top[0], segment->seg)) 
 			{
 				left->intersecting_segment = bounding_box.bottom->segment;
@@ -1338,6 +1389,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 				left->type = SEGMENT_INTERSECTION;
 				left->segment = segment;
 				left->intersecting_segment = bounding_box.bottom->segment;
+				increment_intersections();
 				cuts.push_back(left);
 			}
 
@@ -1356,6 +1408,7 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 				left->type = SEGMENT_INTERSECTION;
 				left->segment = segment;
 				left->intersecting_segment = bounding_box.top->segment;
+				increment_intersections();
 				cuts.push_back(left);
 			}
 			cuts.push_back(segment_cut);
@@ -1389,9 +1442,11 @@ vector<Cut*> Tree::get_cuts(Node* node, Segment* segment, Cut* carry_over, Cut* 
 	return cuts;
 }
 
-
 void Tree::v_partition_priority(Node* node, Cut* cut) 
 {
+	if (EXPERIMENTS == 1)
+		v_partition_calls++;
+
 	//std::cout << "\n vpart cut: \n" << *cut << "\n";
 	if (cut->type == SEGMENT) 
 	{
@@ -1721,13 +1776,15 @@ void Tree::v_partition_priority(Node* node, Cut* cut)
 				node->positive_child = t_positive;
 				node->cut = cut;
 			}
-			
 		}
 	}
 }
 
 void Tree::partition_priority(Node* node, Cut* cut) 
 {
+	if (EXPERIMENTS == 1)
+		partition_calls++;
+
 	if (cut->type != SEGMENT) 
 	{
 		std::cout << "\n can't partition with a vertical cut...\n";
@@ -1757,7 +1814,10 @@ void Tree::partition_priority(Node* node, Cut* cut)
 	if (segment_intersects_region(subtrees.t_above, cut->segment) && segment_intersects_region(subtrees.t_below, cut->segment)) 
 	{
 
-		//cout << "\n\n\n FOUND AN INTERSECTION!! \n\n";
+		if (EXPERIMENTS == 1) 
+		{
+			number_of_intersections++;
+		}
 
 		Cut* intersection_cut = new Cut();
 		intersection_cut->type = SEGMENT_INTERSECTION;
@@ -2600,6 +2660,8 @@ void Tree::partition_priority(Node* node, Cut* cut)
 
 void Tree::v_merge_priority(Node* node) 
 {
+	if (EXPERIMENTS == 1)
+		v_merge_calls++;
 
 	if (node->cut == nullptr || node->cut->type == SEGMENT) 
 	{
@@ -3138,7 +3200,7 @@ void Tree::v_merge_priority(Node* node)
 void Tree::insert_into_node(Node* node, Segment* segment, vector<Cut*> cuts) 
 {
 	//cout << "\n" << segment->seg << "\n";
-
+	
 	if (cuts.size() == 0) 
 	{
 		std::cout << "\n there has to be at least one cut when insertinig into a node \n";
@@ -3185,6 +3247,19 @@ void Tree::insert_into_node(Node* node, Segment* segment, vector<Cut*> cuts)
 
 void Tree::insert_with_priority(Segment* segment) 
 {
+	clock_t start;
+	clock_t end;
+	int intersection_count_before_insert;
+	int intersection_count_after_insert;
+
+	if (EXPERIMENTS == 1) 
+	{
+		intersection_count_before_insert = number_of_intersections;
+		number_of_segments++;
+		start = clock();
+	}
+
+	//cout << "\n insert \n";
 	Cut* vertical_source = new Cut();
 	vertical_source->segment = segment;
 	vertical_source->type == VERTICAL_SOURCE;
@@ -3279,15 +3354,38 @@ void Tree::insert_with_priority(Segment* segment)
 			dump_nodes("blah.dat", test);*/
 		}
 		cuts = get_cuts(node, segment, carry_over, vertical_source, vertical_target, segment_cut);
+		
+		/*
+		if (EXPERIMENTS == 1)
+		{
+			if (cuts.size() > 1)
+			{
+				if (cuts[1]->type == SEGMENT_INTERSECTION) 
+				{
+					number_of_intersections++;
+				}
+				else if (cuts.size() == 2 && cuts[0]->type == SEGMENT_INTERSECTION && cuts[1]->type == SEGMENT) 
+				{
+					BoundingBox bb = get_bounding_box(node);
+					Line_2 line = cuts[0]->get_defining_line();
+					Line_2 left_line = bb.left->get_defining_line();
+					if (bb.type == BTL || bb.type == BRTL) 
+					{
+						Point_2 intersection_point = intersect_lines(Line_2(segment->seg), left_line);
+						if (bb.top->get_defining_line().has_on_negative_side(intersection_point) && bb.bottom->get_defining_line().has_on_positive_side(intersection_point)) 
+						{
+							number_of_intersections++;
+						}
+					}
+				}
+			}
+		}*/
 
-		//
-		//TEST
-		//
 		if (cuts.size() == 2) 
 		{
 			if (cuts[0]->type == SEGMENT) 
 			{
-				cout << "\n epic fail, the first cut of 2 can't be a segment cut \n";
+				cout << "\n ERROR: the first cut of 2 can't be a segment cut \n";
 				exit(0);
 			}
 		}
@@ -3295,22 +3393,44 @@ void Tree::insert_with_priority(Segment* segment)
 		{
 			if (cuts[0]->type == SEGMENT || cuts[1]->type == SEGMENT) 
 			{
-				cout << "\n epic fail, the first or second cut of 3 can't be a segment cut \n";
+				cout << "\n ERROR: the first or second cut of 3 can't be a segment cut \n";
 				exit(0);
 			}
 
 			if (cuts[2]->type != SEGMENT) 
 			{
-				cout << "\n this is also weird \n";
+				cout << "\n this is also unexpected \n";
 				exit(0);
 			}
 		}
 
-		//
-		// This is also weird
-		//
-
-
 		insert_into_node(node, segment, cuts);
+	}
+
+	if (EXPERIMENTS == 1 && number_of_segments % step_size == 0) 
+	{
+		//std::cout << "\n dynamic insert \n";
+		intersection_count_after_insert = number_of_intersections;
+		int intersection_delta = intersection_count_after_insert - intersection_count_before_insert;
+
+		end = clock();
+		dynamic_insert_stats << number_of_segments << "\t";
+		dynamic_insert_stats << segment->priority << "\t";
+		dynamic_insert_stats << nodes.size() << "\t";
+		dynamic_insert_stats << size(root) << "\t";
+		dynamic_insert_stats << depth(root) << "\t";
+		dynamic_insert_stats << nodes_visited_in_search << "\t";
+		dynamic_insert_stats << v_partition_calls << "\t";
+		dynamic_insert_stats << partition_calls << "\t";
+		dynamic_insert_stats << v_merge_calls << "\t";
+		dynamic_insert_stats << intersection_delta <<"\t";
+		dynamic_insert_stats << number_of_intersections << "\t";
+		dynamic_insert_stats << (double)(end - start) / CLOCKS_PER_SEC << "\n";
+		//dynamic_insert_stats.close();
+
+		nodes_visited_in_search = 0;
+		v_partition_calls = 0;
+		partition_calls = 0;
+		v_merge_calls = 0;
 	}
 }
