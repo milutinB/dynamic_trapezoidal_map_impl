@@ -4,6 +4,7 @@
 #include "BoundingBox.h"
 #include <iostream>
 #include <stack>
+#include <fstream>
 #define CHECKING 1;
 
 //using namespace std;
@@ -23,7 +24,14 @@ struct Tree
 	int v_merge_calls = 0;
 	int v_partition_calls = 0;
 	int partition_calls = 0;
+	int nodes_visited_in_search = 0;
+	int number_of_segments = 0;
+	int number_of_intersections = 0;
 
+	void increment_intersections();
+	int step_size = 1;
+
+	fstream dynamic_insert_stats;
 	// Returns the bounding box of the given node.
 	// The bounding box is a struct containing the cuts
 	// that define the region of the node.
@@ -45,6 +53,9 @@ struct Tree
 	// Get depth of the tree
 
 	int depth(Node* node);
+
+
+	int size(Node* node);
 
 	// Find all leaves whose regions intersect segment
 	vector<Node*> search(Segment* segment);
