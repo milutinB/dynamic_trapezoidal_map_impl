@@ -1,5 +1,5 @@
 ## Overview
-This repository contains the source code for the experiments reported on in <LINK TO PAPAER>. The experiments evaluate a dynamic algorithm for construction of a trapezoidal search tree for a set of 2D line segments with priorities. The experiments run the algorithm when the segments are inserting in increasing order of priority and in random order. After each insertion, the following information is recorded:
+This repository contains the source code for the experiments reported on in (LINK TO PAPAER). The experiments evaluate a dynamic algorithm for construction of a trapezoidal search tree for a set of 2D line segments with priorities. The experiments run the algorithm when the segments are inserting in increasing order of priority and in random order. After each insertion, the following information is recorded:
 
 * Number of segments already inserted into the tree
 * The priority of the last segment inserted
