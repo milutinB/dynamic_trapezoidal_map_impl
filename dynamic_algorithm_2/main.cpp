@@ -9,13 +9,13 @@
 #include "Node.h";
 #include <cmath>
 #include <time.h>
-#include "retrieve_subtree_test.h"
-#include "destruction_pattern_test.h"
+//#include "retrieve_subtree_test.h"
+//#include "destruction_pattern_test.h"
 //#include "v_partition_test.h";
 //#include "partition_test.h";
 //#include "v_merge_test.h"
 #include "experiment.h";
-#include "common_endpoint_test.h";
+//#include "common_endpoint_test.h";
 
 using namespace std;
 
