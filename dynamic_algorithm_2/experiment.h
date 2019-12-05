@@ -182,7 +182,7 @@ void experiment(Tree* tree, int input_size, std::string type, int seed, int step
 		other_segments.push_back(segments[i]);
 	}
 
-	std::cout << "\n finished validating input \n";
+	std::cout << "\n finished validating segments \n";
 
 	Tree* naive_tree = new Tree();
 	naive_tree->enclosing_box = tree->enclosing_box;
