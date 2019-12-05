@@ -16,6 +16,13 @@ This repository contains the source code for the experiments reported on in (LIN
 Once the experiments are complete, two files, dynamic_insert_stats.dat and static_insert_stats.dat, are created in the directory containing the executable.
 
 
+## Prerequisites
+
+To compile the code, the following libraries must be installed:
+
+* CGAL 4.14.1 https://www.cgal.org/
+* Boost 1.71 https://www.boost.org/
+
 ## How to Build
 cd /path/to/your/program
 cgal_create_CMakeLists -s your_program
