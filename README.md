@@ -9,6 +9,7 @@ This repository contains the source code for the experiments reported on in (LIN
 * Number of nodes visited during the search
 * Number of calls to the v_partition subroutine
 * Number of calls to the partition subroutine
+* Number of calls to the v_merge subroutine
 * Number of segments found to intersect the new segment
 * Total number of intersections in the current tree
 * Execution time of the insert call
