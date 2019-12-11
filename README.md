@@ -26,7 +26,8 @@ To compile the code, the following libraries must be installed:
 
 ## How to Build
 ### Windows 
-TBA
+* In Visual Studio, select **File > Open > Folder** and open the dynamic_algorithm_2 folder in the directory where the repository is cloned.
+* Press **Ctrl + Shift + B** to build the project.
 ### Ubuntu
 ```
 mkdir build
