@@ -777,12 +777,12 @@ void Tree::insert(Segment* segment)
 		dynamic_insert_stats << "0\t";
 		dynamic_insert_stats << (double)(end - start) / CLOCKS_PER_SEC << "\n";
 		//dynamic_insert_stats.close();
-
-		nodes_visited_in_search = 0;
-		v_partition_calls = 0;
-		partition_calls = 0;
-		v_merge_calls = 0;
 	}
+
+	nodes_visited_in_search = 0;
+	v_partition_calls = 0;
+	partition_calls = 0;
+	v_merge_calls = 0;
 
 	if (CHECKING >= 100)
 		if (!is_valid(root))
@@ -3428,10 +3428,10 @@ void Tree::insert_with_priority(Segment* segment)
 		dynamic_insert_stats << number_of_intersections << "\t";
 		dynamic_insert_stats << (double)(end - start) / CLOCKS_PER_SEC << "\n";
 		//dynamic_insert_stats.close();
-
-		nodes_visited_in_search = 0;
-		v_partition_calls = 0;
-		partition_calls = 0;
-		v_merge_calls = 0;
 	}
+
+	nodes_visited_in_search = 0;
+	v_partition_calls = 0;
+	partition_calls = 0;
+	v_merge_calls = 0;
 }
