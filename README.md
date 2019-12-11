@@ -25,7 +25,15 @@ To compile the code, the following libraries must be installed:
 * Boost 1.71 https://www.boost.org/
 
 ## How to Build
-
+### Windows 
+TBA
+### Ubuntu
+```
+mkdir build
+cd build
+cmake -DCGAL_DIR=/CGAL-SRC/ -DCMAKE_BUILD_TYPE=Debug ../
+make
+```
 
 ## Running the Executable
 The executable takes 4 parameters: the number of segments to be generated, a string indicating the type of experiment, a seed for the random number generator and the step size.
