@@ -134,7 +134,7 @@ bool is_valid_input(vector<Segment> segments)
 		}
 	}
 
-	std::cout << "\n number of intersection: " << intersection_count << "\n";
+	//std::cout << "\n number of intersection: " << intersection_count << "\n";
 	return true;
 }
 
@@ -190,8 +190,9 @@ void experiment(Tree* tree, int input_size, std::string type, int seed, int step
 
 	naive_tree->step_size = step_size;
 
-	naive_tree->dynamic_insert_stats.open("static_insert_stats.dat", 'w');
-	naive_tree->dynamic_insert_stats << "# static inserts of 1000 segments, segments with random endpoints, seed=1337\n";
+	//naive_tree->dynamic_insert_stats.open("static_insert_stats.dat", 'w');
+	naive_tree->dynamic_insert_stats.open("static_insert_stats.dat", std::fstream::out | std::fstream::trunc);
+	//naive_tree->dynamic_insert_stats << "# static inserts of 1000 segments, segments with random endpoints, seed=1337\n";
 	naive_tree->dynamic_insert_stats << "# segments" << "\t";
 	naive_tree->dynamic_insert_stats << "priority" << "\t";
 	naive_tree->dynamic_insert_stats << "roots of subtrees" << "\t";
@@ -218,8 +219,9 @@ void experiment(Tree* tree, int input_size, std::string type, int seed, int step
 
 	tree->step_size = step_size;
 
-	tree->dynamic_insert_stats.open("dynamic_insert_stats.dat", 'w');
-	tree->dynamic_insert_stats << "# dynamic inserts of 1000 segments, segments with random endpoints, seed=1337\n";
+	//tree->dynamic_insert_stats.open("dynamic_insert_stats.dat", 'w');
+	tree->dynamic_insert_stats.open("dynamic_insert_stats.dat", std::fstream::out | std::fstream::trunc);
+	//tree->dynamic_insert_stats << "# dynamic inserts of 1000 segments, segments with random endpoints, seed=1337\n";
 	tree->dynamic_insert_stats << "# segments" << "\t";
 	tree->dynamic_insert_stats << "priority" << "\t";
 	tree->dynamic_insert_stats << "roots of subtrees" << "\t";
