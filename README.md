@@ -1,5 +1,5 @@
 ## Overview
-This repository contains the source code for the experiments reported on in <LINK TO PAPAER>. The experiments evaluate a dynamic algorithm for construction of a trapezoidal search tree for a set of 2D line segments with priorities. The experiments run the algorithm when the segments are inserting in increasing order of priority and in random order. After each insertion, the following information is recorded:
+This repository contains the source code for the experiments reported on in https://arxiv.org/abs/1912.03389. The experiments evaluate a dynamic algorithm for construction of a trapezoidal search tree for a set of 2D line segments with priorities. The experiments run the algorithm when the segments are inserting in increasing order of priority and in random order. After each insertion, the following information is recorded:
 
 * Number of segments already inserted into the tree
 * The priority of the last segment inserted
@@ -9,6 +9,7 @@ This repository contains the source code for the experiments reported on in <LIN
 * Number of nodes visited during the search
 * Number of calls to the v_partition subroutine
 * Number of calls to the partition subroutine
+* Number of calls to the v_merge subroutine
 * Number of segments found to intersect the new segment
 * Total number of intersections in the current tree
 * Execution time of the insert call
@@ -16,13 +17,15 @@ This repository contains the source code for the experiments reported on in <LIN
 Once the experiments are complete, two files, dynamic_insert_stats.dat and static_insert_stats.dat, are created in the directory containing the executable.
 
 
+## Prerequisites
+
+To compile the code, the following libraries must be installed:
+
+* CGAL 4.14.1 https://www.cgal.org/
+* Boost 1.71 https://www.boost.org/
+
 ## How to Build
-cd /path/to/your/program
-cgal_create_CMakeLists -s your_program
-mkdir build
-cd build
-cmake -DCGAL_DIR=XXXXXXXX -DCMAKE_BUILD_TYPE=Debug ../
-make
+
 
 ## Running the Executable
 The executable takes 4 parameters: the number of segments to be generated, a string indicating the type of experiment, a seed for the random number generator and the step size.
