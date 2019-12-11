@@ -83,7 +83,9 @@ void climb_tree(Node* parent, Node* child, BoundingBox* bounding_box)
 	cout << "\n\nERROR\n\n";
 }
 
-CGAL::Lazy_exact_nt<CGAL::Gmpq> slope_of_line(Line_2 line)
+//CGAL::Lazy_exact_nt<CGAL::Gmpq> slope_of_line(Line_2 line)
+
+Kernel::FT slope_of_line(Line_2 line)
 {
 	Direction_2 direction = line.direction();
 	return direction.dy() / direction.dx();
