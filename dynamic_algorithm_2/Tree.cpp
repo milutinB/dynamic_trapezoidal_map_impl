@@ -4,7 +4,7 @@
 #include <CGAL/Direction_2.h>
 
 #define CHECKING 0
-#define EXPERIMENTS 0
+#define EXPERIMENTS 1
 //#define STEP_SIZE 1
 
 typedef CGAL::Direction_2<Kernel> Direction_2;
@@ -412,13 +412,13 @@ vector<Node*> Tree::get_leaves()
 void Tree::dump_nodes(string file_name, vector<Node*> nodes)
 {
 	fstream file;
-	file.open(file_name, 'w');
+	file.open(file_name, std::fstream::out | std::fstream::trunc);
 	//cout << "\n\n open file \n\n";
 	for (auto node : nodes)
 	{
 
 		fstream last_node;
-		last_node.open("last node", 'w');
+		last_node.open("last node", std::fstream::out | std::fstream::trunc);
 		//cout << "\n\n getting nodes \n\n";
 		vector<Segment_2> segs = get_bounding_box(node).cuts_to_segments();
 		//cout << "got boundingbox";
@@ -3409,7 +3409,6 @@ void Tree::insert_with_priority(Segment* segment)
 
 	if (EXPERIMENTS == 1 && number_of_segments % step_size == 0) 
 	{
-		//std::cout << "\n dynamic insert \n";
 		intersection_count_after_insert = number_of_intersections;
 		int intersection_delta = intersection_count_after_insert - intersection_count_before_insert;
 
