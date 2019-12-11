@@ -29,8 +29,6 @@ To compile the code, the following libraries must be installed:
 TBA
 ### Ubuntu
 ```
-cd dynamic_trapezoidal_map_impl
-/CGAL-SRC/Scripts/scripts/cgal_create_CMakeLists -s main
 mkdir build
 cd build
 cmake -DCGAL_DIR=/CGAL-SRC/ -DCMAKE_BUILD_TYPE=Debug ../
