@@ -157,7 +157,7 @@ bool BoundingBox::endpoint_on_segment(Point_2 query_point)
 	return false;
 }
 
-bool BoundingBox::vertical_line_cuts_region(Line_2 &line) 
+bool BoundingBox::vertical_line_cuts_region(Line_2 line) 
 {
 
 	Point_2 intersection_1;

@@ -23,7 +23,7 @@ struct BoundingBox
 	bool contains_point(Point_2 query_point);
 	bool contains_point_strict(Point_2 query_point);
 	bool endpoint_on_segment(Point_2 query_point);
-	bool vertical_line_cuts_region(Line_2 &line);
+	bool vertical_line_cuts_region(Line_2 line);
 	double compute_area();
 };
 
