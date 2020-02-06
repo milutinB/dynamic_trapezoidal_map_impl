@@ -3,6 +3,7 @@
 #include "Cut.h"
 #include "BoundingBox.h"
 
+
 struct Node
 {
 	Node* negative_child = nullptr;
@@ -13,5 +14,9 @@ struct Node
 
 	bool is_leaf();
 
-	bool compare_nodes(Node* node); 
+	bool compare_nodes(Node* node);
+
+	void set_children(Node* negative_ch, Node* positive_ch);
+
+	void set_props(Cut* cut, Node* negative_ch, Node* positive_ch);
 };

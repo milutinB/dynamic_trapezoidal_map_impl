@@ -977,6 +977,89 @@ vector<Node*> Tree::search_with_priority(Segment* segment)
 	return output;
 }
 
+
+Node* Tree::deepest_node_containing_segment_deletion(Node* node, Segment* segment)
+{
+	if (EXPERIMENTS == 1)
+		nodes_visited_in_search++;
+
+	if (node->is_leaf() || node->priority() >= segment->priority)
+	{
+		return node;
+	}
+
+	if (segment_intersects_region(node->negative_child, segment) && segment_intersects_region(node->positive_child, segment))
+	{
+		return node;
+	}
+
+	if (segment_intersects_region(node->negative_child, segment))
+	{
+		return deepest_node_containing_segment_deletion(node->negative_child, segment);
+	}
+
+	return deepest_node_containing_segment_deletion(node->positive_child, segment);
+}
+
+
+vector<Node*> Tree::search_with_priority_for_deletion(Segment* segment)
+{
+	vector<Node*> output = vector<Node*>();
+	Node* deepest_node = deepest_node_containing_segment_deletion(root, segment);
+
+
+	std::stack<Node*> stack = std::stack<Node*>();
+	stack.push(deepest_node);
+
+	while (!stack.empty())
+	{
+		Node* top = stack.top();
+		stack.pop();
+
+		if (segment_intersects_region(top, segment))
+		{
+			if (top->priority() == segment->priority)
+			{
+				//std::cout << "equal priority in search \n";
+				output.push_back(top);
+			}
+			else
+			{
+				//std::cout  << "distinct priority in search \n";
+				//if (segment_intersects_region(top->positive_child, segment) && segment_intersects_region(top->negative_child, segment)) 
+
+				if (!top->is_leaf() && top->priority() < segment->priority)
+				{
+					if (top->cut->type != SEGMENT)
+					{
+						stack.push(top->positive_child);
+						stack.push(top->negative_child);
+					}
+					else
+					{
+						Line_2 defining_line = top->cut->get_defining_line();
+						Line_2 segment_line = Line_2(segment->seg);
+
+						if (slope_of_line(segment_line) > slope_of_line(defining_line))
+						{
+							stack.push(top->positive_child);
+							stack.push(top->negative_child);
+						}
+						else
+						{
+							stack.push(top->negative_child);
+							stack.push(top->positive_child);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return output;
+}
+
+
 Subtrees Tree::retrieve_subtrees(Node* node) 
 {
 	Subtrees subtrees = Subtrees();
@@ -3434,4 +3517,767 @@ void Tree::insert_with_priority(Segment* segment)
 	v_partition_calls = 0;
 	partition_calls = 0;
 	v_merge_calls = 0;
+}
+
+void Tree::merge_priority(Node* node)
+{
+	if (node->cut->type != SEGMENT)
+	{
+		std::cout << "\n Error: node passed to a merge call must be destroyed by a segment cut \n";
+		exit(0);
+	}
+	if (node->positive_child->is_leaf() && node->negative_child->is_leaf())
+	{
+		node->positive_child = nullptr;
+		node->negative_child = nullptr;
+		node->cut = nullptr;
+		return;
+	}
+	if (node->positive_child->priority() < node->negative_child->priority())
+	{
+		Subtrees subtrees = retrieve_subtrees(node->positive_child);
+
+		if (subtrees.type == AB)
+		{
+			/*
+			Node* merge_below = new Node();
+			Cut* new_cut = node->positive_child->cut;
+
+			merge_below->cut = node->cut;
+			merge_below->positive_child = subtrees.t_below;
+			merge_below->positive_child->parent = merge_below;
+			merge_below->negative_child = node->negative_child;
+			merge_below->negative_child->parent = merge_below;
+
+			merge_priority(merge_below);
+
+			node->positive_child = subtrees.t_above;
+			node->positive_child->parent = node;
+			node->negative_child = merge_below;
+			node->negative_child->parent = node;
+			node->cut = new_cut;*/
+
+			Node* merge_below = new Node();
+			Cut* new_cut = node->positive_child->cut;
+
+			merge_below->cut = node->cut;
+			merge_below->set_children(node->negative_child, subtrees.t_below);
+
+			merge_priority(merge_below);
+
+			node->set_children(merge_below, subtrees.t_above);
+			node->cut = new_cut;
+		}
+		else if (subtrees.type == LAB)
+		{
+			Cut* left_cut = node->positive_child->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+
+			v_partition_priority(node->negative_child, left_cut);
+
+			Node* bottom_left = node->negative_child->negative_child;
+			Node* bottom_right = node->negative_child->positive_child;
+
+			Node* merge_left = new Node();
+			merge_left->cut = node->cut;
+			merge_left->positive_child = subtrees.t_left;
+			merge_left->positive_child->parent = merge_left;
+			merge_left->negative_child = bottom_left;
+			merge_left->negative_child->parent = merge_left;
+			merge_priority(merge_left);
+
+			Node* merge_right = new Node();
+			merge_right->cut = node->cut;
+			merge_right->positive_child = subtrees.t_below;
+			merge_right->positive_child->parent = merge_right;
+			merge_right->negative_child = bottom_right;
+			merge_right->negative_child->parent = merge_right;
+			merge_priority(merge_right);
+
+			node->cut = left_cut;
+			node->negative_child = merge_left;
+			node->negative_child->parent = node;
+			node->positive_child = new Node();
+			node->positive_child->parent = node;
+			node->positive_child->cut = segment_cut;
+			node->positive_child->positive_child = subtrees.t_above;
+			node->positive_child->positive_child->parent = node->positive_child;
+			node->positive_child->negative_child = merge_right;
+			node->positive_child->negative_child->parent = node->positive_child;
+
+
+		}
+		else if (subtrees.type == RAB)
+		{
+			Cut* right_cut = node->positive_child->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+			Cut* current_cut = node->cut;
+
+			v_partition_priority(node->negative_child, right_cut);
+
+			Node* bottom_left = node->negative_child->negative_child;
+			Node* bottom_right = node->negative_child->positive_child;
+
+			Node* merge_left = new Node();
+			merge_left->cut = current_cut;
+			merge_left->positive_child = subtrees.t_below;
+			merge_left->positive_child->parent = merge_left;
+			merge_left->negative_child = bottom_left;
+			merge_left->negative_child->parent = merge_left;
+			merge_priority(merge_left);
+
+			Node* merge_right = new Node();
+			merge_right->cut = current_cut;
+			merge_right->positive_child = subtrees.t_right;
+			merge_right->positive_child->parent = merge_right;
+			merge_right->negative_child = bottom_right;
+			merge_right->negative_child->parent = merge_right;
+			merge_priority(merge_right);
+
+			node->cut = right_cut;
+			node->negative_child = new Node();
+			node->negative_child->cut = segment_cut;
+			node->negative_child->negative_child = merge_left;
+			node->negative_child->negative_child->parent = node->negative_child;
+			node->negative_child->parent = node;
+			node->negative_child->positive_child = subtrees.t_above;
+			node->negative_child->positive_child->parent = node->negative_child;
+			node->positive_child = merge_right;
+			node->positive_child->parent = node;
+		}
+		else if (subtrees.type == RLAB)
+		{
+			Cut* current_cut = node->cut;
+			Cut* left_cut = node->positive_child->cut;
+			Cut* right_cut = subtrees.t_right->parent->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+
+			v_partition_priority(node->negative_child, left_cut);
+			v_partition_priority(node->negative_child->positive_child, right_cut);
+
+			Node* bottom_left = node->negative_child->negative_child;
+			Node* bottom_middle = node->negative_child->positive_child->negative_child;
+			Node* bottom_right = node->negative_child->positive_child->positive_child;
+
+			Node* left_merge = new Node();
+			left_merge->cut = current_cut;
+			left_merge->positive_child = subtrees.t_left;
+			left_merge->positive_child->parent = left_merge;
+			left_merge->negative_child = bottom_left;
+			left_merge->negative_child->parent = left_merge;
+			merge_priority(left_merge);
+
+			Node* middle_merge = new Node();
+			middle_merge->cut = current_cut;
+			middle_merge->positive_child = subtrees.t_below;
+			middle_merge->positive_child->parent = middle_merge;
+			middle_merge->negative_child = bottom_middle;
+			middle_merge->negative_child->parent = middle_merge;
+			merge_priority(middle_merge);
+
+			Node* right_merge = new Node();
+			right_merge->cut = current_cut;
+			right_merge->positive_child = subtrees.t_right;
+			right_merge->positive_child->parent = right_merge;
+			right_merge->negative_child = bottom_right;
+			right_merge->negative_child->parent = right_merge;
+			merge_priority(right_merge);
+
+			node->cut = left_cut;
+
+			node->negative_child = left_merge;
+			node->negative_child->parent = node;
+			node->positive_child = new Node();
+			node->positive_child->cut = right_cut;
+			node->positive_child->parent = node;
+
+			node->positive_child->negative_child = new Node();
+			node->positive_child->negative_child->cut = segment_cut;
+			node->positive_child->negative_child->parent = node->positive_child;
+			node->positive_child->negative_child->positive_child = subtrees.t_above;
+			node->positive_child->negative_child->positive_child->parent = node->positive_child->negative_child;
+			node->positive_child->negative_child->negative_child = middle_merge;
+			node->positive_child->negative_child->negative_child->parent = node->positive_child->negative_child;
+
+			node->positive_child->positive_child = right_merge;
+			node->positive_child->positive_child->parent = node->positive_child;
+			return;
+		}
+		return;
+	}
+	else if (node->positive_child->priority() > node->negative_child->priority())
+	{
+		Subtrees subtrees = retrieve_subtrees(node->negative_child);
+		if (subtrees.type == AB)
+		{
+			Node* merge_above = new Node();
+			Cut* new_cut = node->negative_child->cut;
+
+			merge_above->cut = node->cut;
+			merge_above->positive_child = node->positive_child;
+			merge_above->positive_child->parent = merge_above;
+			merge_above->negative_child = subtrees.t_above;
+			merge_above->negative_child->parent = merge_above;
+
+			merge_priority(merge_above);
+
+			node->positive_child = merge_above;
+			node->positive_child->parent = node;
+			node->negative_child = subtrees.t_below;
+			node->negative_child->parent = node;
+			node->cut = new_cut;
+			return;
+		}
+		else if (subtrees.type == RAB)
+		{
+
+			Cut* right_cut = node->negative_child->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+			Cut* current_cut = node->cut;
+
+			v_partition_priority(node->positive_child, right_cut);
+
+			Node* top_left = node->positive_child->negative_child;
+			Node* top_right = node->positive_child->positive_child;
+
+			Node* merge_left = new Node();
+			merge_left->cut = current_cut;
+			merge_left->positive_child = top_left;
+			merge_left->positive_child->parent = merge_left;
+			merge_left->negative_child = subtrees.t_above;
+			merge_left->negative_child->parent = merge_left;
+			merge_priority(merge_left);
+
+			Node* merge_right = new Node();
+			merge_right->cut = current_cut;
+			merge_right->positive_child = top_right;
+			merge_right->positive_child->parent = merge_right;
+			merge_right->negative_child = subtrees.t_right;
+			merge_right->negative_child->parent = merge_right;
+			merge_priority(merge_right);
+
+			node->cut = right_cut;
+			node->negative_child = new Node();
+			node->negative_child->cut = segment_cut;
+			node->negative_child->parent = node;
+			node->negative_child->positive_child = merge_left;
+			node->negative_child->positive_child->parent = node->negative_child;
+			node->negative_child->negative_child = subtrees.t_below;
+			node->negative_child->negative_child->parent = node->negative_child;
+			node->positive_child = merge_right;
+			node->positive_child->parent = node;
+			return;
+		}
+		else if (subtrees.type == LAB)
+		{
+
+			Cut* left_cut = node->negative_child->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+			Cut* current_cut = node->cut;
+
+			v_partition_priority(node->positive_child, left_cut);
+
+			Node* top_left = node->positive_child->negative_child;
+			Node* top_right = node->positive_child->positive_child;
+
+			Node* merge_left = new Node();
+			merge_left->cut = current_cut;
+			merge_left->positive_child = top_left;
+			merge_left->positive_child->parent = merge_left;
+			merge_left->negative_child = subtrees.t_left;
+			merge_left->negative_child->parent = merge_left;
+			merge_priority(merge_left);
+
+			Node* merge_right = new Node();
+			merge_right->cut = current_cut;
+			merge_right->positive_child = top_right;
+			merge_right->positive_child->parent = merge_right;
+			merge_right->negative_child = subtrees.t_above;
+			merge_right->negative_child->parent = merge_right;
+			merge_priority(merge_right);
+
+			node->cut = left_cut;
+			node->negative_child = merge_left;
+			node->negative_child->parent = node;
+			node->positive_child = new Node();
+			node->positive_child->cut = segment_cut;
+			node->positive_child->parent = node;
+			node->positive_child->positive_child = merge_right;
+			node->positive_child->positive_child->parent = node->positive_child;
+			node->positive_child->negative_child = subtrees.t_below;
+			node->positive_child->negative_child->parent = node->positive_child;
+
+			return;
+		}
+		if (subtrees.type == RLAB)
+		{
+			Cut* left_cut = node->negative_child->cut;
+			Cut* right_cut = subtrees.t_right->parent->cut;
+			Cut* segment_cut = subtrees.t_above->parent->cut;
+
+			v_partition_priority(node->positive_child, left_cut);
+			v_partition_priority(node->positive_child->positive_child, right_cut);
+
+			Node* top_left = node->positive_child->negative_child;
+			Node* top_middle = node->positive_child->positive_child->negative_child;
+			Node* top_right = node->positive_child->positive_child->positive_child;
+
+			Node* merge_left = new Node();
+			merge_left->cut = node->cut;
+			merge_left->positive_child = top_left;
+			merge_left->positive_child->parent = merge_left;
+			merge_left->negative_child = subtrees.t_left;
+			merge_left->negative_child->parent = merge_left;
+			merge_priority(merge_left);
+
+			Node* merge_middle = new Node();
+			merge_middle->cut = node->cut;
+			merge_middle->positive_child = top_middle;
+			merge_middle->positive_child->parent = merge_middle;
+			merge_middle->negative_child = subtrees.t_above;
+			merge_middle->negative_child->parent = merge_middle;
+			merge_priority(merge_middle);
+
+			Node* merge_right = new Node();
+			merge_right->cut = node->cut;
+			merge_right->positive_child = top_right;
+			merge_right->positive_child->parent = merge_right;
+			merge_right->negative_child = subtrees.t_right;
+			merge_right->negative_child->parent = merge_right;
+			merge_priority(merge_right);
+
+			node->cut = left_cut;
+			node->negative_child = merge_left;
+			node->negative_child->parent = node;
+			node->positive_child = new Node();
+			node->positive_child->parent = node;
+			node->positive_child->cut = right_cut;
+			node->positive_child->negative_child = new Node();
+			node->positive_child->negative_child->cut = segment_cut;
+			node->positive_child->negative_child->parent = node->positive_child;
+			node->positive_child->negative_child->positive_child = merge_middle;
+			node->positive_child->negative_child->positive_child->parent = node->positive_child->negative_child;
+			node->positive_child->negative_child->negative_child = subtrees.t_below;
+			node->positive_child->negative_child->negative_child->parent = node->positive_child->negative_child;
+			node->positive_child->positive_child = merge_right;
+			node->positive_child->positive_child->parent = node->positive_child;
+			return;
+		}
+
+		return;
+	}
+	else if (node->positive_child->priority() == node->negative_child->priority())
+	{
+
+		Segment segment = *node->cut->segment;
+		Line_2 line = node->cut->get_defining_line();
+		Subtrees positive_subtrees = retrieve_subtrees(node->positive_child);
+		Subtrees negative_subtrees = retrieve_subtrees(node->negative_child);
+		Segment intersecting_segment = *positive_subtrees.t_above->parent->cut->segment;
+		Point_2 left_endpoint = intersecting_segment.seg.source();
+		Point_2 right_endpoint = intersecting_segment.seg.target();
+		Point_2 intersection_point = intersect_segments(segment.seg, intersecting_segment.seg);
+
+
+		if (line.has_on_negative_side(left_endpoint))
+		{
+			if (positive_subtrees.type == LAB && negative_subtrees.type == RAB)
+			{
+				std::cout << "LAB, RAB";
+				Cut* current_cut = node->cut;
+				Cut* vertical_cut = positive_subtrees.t_left->parent->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+
+				Node* merge_left = new Node();
+				Node* merge_right = new Node();
+
+				merge_left->cut = current_cut;
+				merge_left->positive_child = positive_subtrees.t_left;
+				merge_left->positive_child->parent = merge_left;
+				merge_left->negative_child = negative_subtrees.t_above;
+				merge_left->negative_child->parent = merge_left;
+				merge_priority(merge_left);
+
+				merge_right->cut = current_cut;
+				merge_right->positive_child = positive_subtrees.t_below;
+				merge_right->positive_child->parent = merge_right;
+				merge_right->negative_child = negative_subtrees.t_right;
+				merge_right->negative_child->parent = merge_right;
+				merge_priority(merge_right);
+
+				Node* v_merge_above = new Node();
+				Node* v_merge_below = new Node();
+
+				v_merge_above->cut = vertical_cut;
+				v_merge_above->negative_child = merge_left;
+				v_merge_above->negative_child->parent = v_merge_above;
+				v_merge_above->positive_child = positive_subtrees.t_above;
+				v_merge_above->positive_child->parent = v_merge_above;
+				v_merge_priority(v_merge_above);
+
+				v_merge_below->cut = vertical_cut;
+				v_merge_below->negative_child = negative_subtrees.t_below;
+				v_merge_below->negative_child->parent = v_merge_below;
+				v_merge_below->positive_child = merge_right;
+				v_merge_below->positive_child->parent = v_merge_below;
+				v_merge_priority(v_merge_below);
+
+				node->cut = segment_cut;
+				node->positive_child = v_merge_above;
+				node->positive_child->parent = node;
+				node->negative_child = v_merge_below;
+				node->negative_child->parent = node;
+
+			}
+			else if (positive_subtrees.type == RLAB && negative_subtrees.type == RAB)
+			{
+				std::cout << "RLAB, RAB";
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+				Cut* left_vertical_cut = positive_subtrees.t_left->parent->cut;
+				Cut* right_vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* current_cut = node->cut;
+
+				v_partition_priority(negative_subtrees.t_right, right_vertical_cut);
+
+				Node* left_merge = new Node();
+				left_merge->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_left);
+				merge_priority(left_merge);
+
+				Node* middle_merge = new Node();
+				middle_merge->set_props(current_cut, negative_subtrees.t_right->negative_child, positive_subtrees.t_below);
+				merge_priority(middle_merge);
+
+				Node* right_merge = new Node();
+				right_merge->set_props(current_cut, negative_subtrees.t_right->positive_child, positive_subtrees.t_right);
+				merge_priority(right_merge);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(left_vertical_cut, left_merge, positive_subtrees.t_above);
+				v_merge_priority(v_merge_above);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(left_vertical_cut, negative_subtrees.t_below, middle_merge);
+				v_merge_priority(v_merge_below);
+
+				Node* negative_child = new Node();
+				negative_child->set_props(segment_cut, v_merge_below, v_merge_above);
+
+				node->set_props(right_vertical_cut, negative_child, right_merge);
+			}
+			else if (positive_subtrees.type == LAB && negative_subtrees.type == RLAB)
+			{
+				std::cout << "\nLAB, RLAB\n";
+				Cut* left_vertical_cut = node->negative_child->cut;
+				Cut* middle_vertical_cut = node->positive_child->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+				Cut* current_cut = node->cut;
+
+				v_partition_priority(positive_subtrees.t_left, left_vertical_cut);
+
+				Node* left_merge = new Node();
+				Node* middle_merge = new Node();
+				Node* right_merge = new Node();
+
+				left_merge->cut = current_cut;
+				left_merge->set_children(negative_subtrees.t_left, positive_subtrees.t_left->negative_child);
+				merge_priority(left_merge);
+				std::cout << "\n left merge \n";
+
+				middle_merge->cut = current_cut;
+				middle_merge->set_children(negative_subtrees.t_above, positive_subtrees.t_left->positive_child);
+				merge_priority(middle_merge);
+				std::cout << "\n middle merge \n";
+
+				right_merge->cut = current_cut;
+				right_merge->set_children(negative_subtrees.t_right, positive_subtrees.t_below);
+				merge_priority(right_merge);
+				std::cout << "\n middle merge \n";
+
+				Node* v_merge_above = new Node();
+				Node* v_merge_below = new Node();
+
+				v_merge_above->cut = middle_vertical_cut;
+				v_merge_above->set_children(middle_merge, positive_subtrees.t_above);
+				v_merge_priority(v_merge_above);
+				std::cout << "\n v_merge above \n";
+
+				v_merge_below->cut = middle_vertical_cut;
+				v_merge_below->set_children(negative_subtrees.t_below, right_merge);
+				v_merge_priority(v_merge_below);
+				std::cout << "\n v_merge below \n";
+
+				Node* positive_child = new Node();
+				positive_child->cut = segment_cut;
+				positive_child->set_children(v_merge_below, v_merge_above);
+
+				node->cut = left_vertical_cut;
+				node->set_children(left_merge, positive_child);
+				std::cout << "\n finished LAB, RLAB \n";
+			}
+			else if (positive_subtrees.type == RLAB && negative_subtrees.type == RLAB)
+			{
+				std::cout << "This is the case I expected";
+
+				Cut* left_vertical_cut = negative_subtrees.t_left->parent->cut;
+				Cut* middle_vertical_cut = negative_subtrees.t_right->parent->cut;
+				Cut* right_vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* current_cut = node->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+
+
+				v_partition_priority(positive_subtrees.t_left, left_vertical_cut);
+				v_partition_priority(negative_subtrees.t_right, right_vertical_cut);
+
+				Node* merge_1 = new Node();
+				Node* merge_2 = new Node();
+				Node* merge_3 = new Node();
+				Node* merge_4 = new Node();
+
+				/*
+				merge_1->cut = current_cut;
+				merge_1->set_children(negative_subtrees.t_left, positive_subtrees.t_left->negative_child);
+				merge_priority(merge_1);*/
+				merge_1->set_props(current_cut, negative_subtrees.t_left, positive_subtrees.t_left->negative_child);
+				merge_priority(merge_1);
+
+				merge_2->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_left->positive_child);
+				merge_priority(merge_2);
+
+				merge_3->set_props(current_cut, negative_subtrees.t_right->negative_child, positive_subtrees.t_below);
+				merge_priority(merge_3);
+
+				merge_4->set_props(current_cut, negative_subtrees.t_right->positive_child, positive_subtrees.t_right);
+				merge_priority(merge_4);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(middle_vertical_cut, negative_subtrees.t_below, merge_3);
+				v_merge_priority(v_merge_below);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(middle_vertical_cut, merge_2, positive_subtrees.t_above);
+				v_merge_priority(v_merge_above);
+
+				Node* new_t_left = merge_1;
+				Node* new_t_above = v_merge_above;
+				Node* new_t_below = v_merge_below;
+				Node* new_t_right = merge_4;
+
+				Node* positive = new Node();
+				Node* positive_negative = new Node();
+
+				node->set_props(left_vertical_cut, new_t_left, positive);
+				positive->set_props(right_vertical_cut, positive_negative, new_t_right);
+				positive_negative->set_props(segment_cut, new_t_below, new_t_above);
+
+			}
+			else
+			{
+				std::cout << "\n well... this is rather unexpected \n";
+				std::cout << "\n" << positive_subtrees.type;
+				std::cout << "\n" << negative_subtrees.type;
+				exit(0);
+			}
+		}
+		else
+		{
+			if (positive_subtrees.type == RAB && negative_subtrees.type == LAB)
+			{
+				std::cout << "\n RAB, LAB \n";
+				Cut* vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* current_cut = node->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+
+				Node* merge_1 = new Node();
+				Node* merge_2 = new Node();
+
+				merge_1->set_props(current_cut, negative_subtrees.t_left, positive_subtrees.t_below);
+				merge_priority(merge_1);
+
+				merge_2->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_right);
+				merge_priority(merge_2);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(vertical_cut, positive_subtrees.t_above, merge_2);
+				v_merge_priority(v_merge_above);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(vertical_cut, merge_1, negative_subtrees.t_below);
+				v_merge_priority(v_merge_below);
+
+				node->set_props(segment_cut, v_merge_below, v_merge_above);
+			}
+			else if (positive_subtrees.type == RLAB && negative_subtrees.type == LAB)
+			{
+				std::cout << "RLAB, LAB";
+				Cut* left_vertical_cut = positive_subtrees.t_left->parent->cut;
+				Cut* right_vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+				Cut* current_cut = node->cut;
+
+				v_partition_priority(negative_subtrees.t_left, left_vertical_cut);
+
+				Node* merge_left = new Node();
+				merge_left->set_props(current_cut, negative_subtrees.t_left->negative_child, positive_subtrees.t_left);
+				merge_priority(merge_left);
+
+				Node* merge_middle = new Node();
+				merge_middle->set_props(current_cut, negative_subtrees.t_left->positive_child, positive_subtrees.t_below);
+				merge_priority(merge_middle);
+
+				Node* merge_right = new Node();
+				merge_right->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_right);
+				merge_priority(merge_right);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(right_vertical_cut, merge_middle, negative_subtrees.t_below);
+				v_merge_priority(v_merge_below);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(right_vertical_cut, positive_subtrees.t_above, merge_right);
+				v_merge_priority(v_merge_above);
+
+				Node* positive_child = new Node();
+				positive_child->set_props(segment_cut, v_merge_below, v_merge_above);
+
+				node->set_props(left_vertical_cut, merge_left, positive_child);
+			}
+			else if (positive_subtrees.type == RAB && negative_subtrees.type == RLAB)
+			{
+				std::cout << "RAB, RLAB";
+				Cut* current_cut = node->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+				Cut* left_vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* right_vertical_cut = negative_subtrees.t_right->parent->cut;
+
+				v_partition_priority(positive_subtrees.t_right, right_vertical_cut);
+
+				Node* merge_left = new Node();
+				merge_left->set_props(current_cut, negative_subtrees.t_left, positive_subtrees.t_below);
+				merge_priority(merge_left);
+
+				Node* merge_middle = new Node();
+				merge_middle->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_right->negative_child);
+				merge_priority(merge_middle);
+
+				Node* merge_right = new Node();
+				merge_right->set_props(current_cut, negative_subtrees.t_right, positive_subtrees.t_right->positive_child);
+				merge_priority(merge_right);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(left_vertical_cut, merge_left, negative_subtrees.t_below);
+				v_merge_priority(v_merge_below);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(left_vertical_cut, positive_subtrees.t_above, merge_middle);
+				v_merge_priority(v_merge_above);
+
+				Node* negative_child = new Node();
+				negative_child->set_props(segment_cut, v_merge_below, v_merge_above);
+
+				node->set_props(right_vertical_cut, negative_child, merge_right);
+			}
+			else if (positive_subtrees.type == RLAB && negative_subtrees.type == RLAB)
+			{
+				std::cout << "RLAB, RLAB";
+				Cut* left_vertical_cut = positive_subtrees.t_left->parent->cut;
+				Cut* middle_vertical_cut = positive_subtrees.t_right->parent->cut;
+				Cut* right_vertical_cut = negative_subtrees.t_right->parent->cut;
+				Cut* current_cut = node->cut;
+				Cut* segment_cut = positive_subtrees.t_above->parent->cut;
+
+				v_partition_priority(negative_subtrees.t_left, left_vertical_cut);
+				v_partition_priority(positive_subtrees.t_right, right_vertical_cut);
+
+				Node* merge_1 = new Node();
+				merge_1->set_props(current_cut, negative_subtrees.t_left->negative_child, positive_subtrees.t_left);
+				merge_priority(merge_1);
+
+				Node* merge_2 = new Node();
+				merge_2->set_props(current_cut, negative_subtrees.t_left->positive_child, positive_subtrees.t_below);
+				merge_priority(merge_2);
+
+				Node* merge_3 = new Node();
+				merge_3->set_props(current_cut, negative_subtrees.t_above, positive_subtrees.t_right->negative_child);
+				merge_priority(merge_3);
+
+				Node* merge_4 = new Node();
+				merge_4->set_props(current_cut, negative_subtrees.t_right, positive_subtrees.t_right->positive_child);
+				merge_priority(merge_4);
+
+				Node* v_merge_below = new Node();
+				v_merge_below->set_props(middle_vertical_cut, merge_2, negative_subtrees.t_below);
+				v_merge_priority(v_merge_below);
+
+				Node* v_merge_above = new Node();
+				v_merge_above->set_props(middle_vertical_cut, positive_subtrees.t_above, merge_3);
+				v_merge_priority(v_merge_above);
+
+				Node* positive_negative = new Node();
+				positive_negative->set_props(segment_cut, v_merge_below, v_merge_above);
+
+				Node* positive = new Node();
+				positive->set_props(right_vertical_cut, positive_negative, merge_4);
+
+				node->set_props(left_vertical_cut, merge_1, positive);
+
+			}
+		}
+
+
+		return;
+	}
+
+	return;
+}
+void Tree::delete_from_node(Node* node, Segment* segment)
+{
+	if (node->priority() != segment->priority)
+	{
+		std::cout << "ERROR: delete from node called on a node which is not destroyed by the given segment";
+		exit(0);
+	}
+
+	if (node->cut->type == SEGMENT)
+	{
+
+		//std::cout << "is a segment cut \n";
+
+		merge_priority(node);
+
+		/*
+		if (!is_valid(node))
+		{
+			std::cout << "\n merge corrupted the tree \n";
+			exit(0);
+		}*/
+
+	}
+	else
+	{
+		//std::cout << "\n not a segment cut \n";
+		if (segment_intersects_region(node->positive_child, segment))
+		{
+			delete_from_node(node->positive_child, segment);
+		}
+		else
+		{
+			delete_from_node(node->negative_child, segment);
+		}
+
+		//std::cout << "\n about to v-merge \n";
+		v_merge_priority(node);
+	}
+}
+
+void Tree::delete_with_priority(Segment* segment)
+{
+	vector<Node*> roots = search_with_priority_for_deletion(segment);
+	dump_nodes("roots.dat", roots);
+	std::cout << roots.size() << "\n";
+	for (int i = 0; i < roots.size(); i++)
+	{
+
+		delete_from_node(roots[i], segment);
+	}
+
 }

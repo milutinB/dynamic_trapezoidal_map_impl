@@ -91,11 +91,15 @@ struct Tree
 
 	Node* deepest_node_containing_segment(Node* node, Segment* segment);
 
+	Node* deepest_node_containing_segment_deletion(Node* node, Segment* segment);
+
 	// Returns a vector of nodes corresponding to the roots of
 	// all subtrees affected by the insertion of the input segment.
 	// The nodes are ordered left to right in the order in which they
 	// intersect the segment.
 	vector<Node*> search_with_priority(Segment* segment);
+
+	vector<Node*> search_with_priority_for_deletion(Segment* segment);
 
 	int count_intersections();
 
@@ -121,7 +125,13 @@ struct Tree
 
 	void insert_with_priority(Segment* segment);
 
+	void merge_priority(Node* node);
+
+	void delete_with_priority(Segment* segment);
+
 	void insert_into_node(Node* node, Segment* segment, vector<Cut*> cuts);
+
+	void delete_from_node(Node* node, Segment* segment);
 
 	void get_leaves_by_traversal(Node* root, vector<Node*> &leaves)
 	{

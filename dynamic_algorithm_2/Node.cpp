@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Node.h"
 
 
@@ -25,12 +23,12 @@ bool Node::compare_nodes(Node* node)
 	{
 		cout << "leaf and non leaf\n";
 
-		if (!is_leaf()) 
+		if (!is_leaf())
 		{
 			cout << "\n dynamic \n";
 			cout << *cut;
 		}
-		else 
+		else
 		{
 			cout << "\n naive \n";
 			cout << *node->cut;
@@ -46,10 +44,10 @@ bool Node::compare_nodes(Node* node)
 
 	if (cut->compare_cuts(node->cut))
 	{
-	//	cout << *cut << "\n";
+		//	cout << *cut << "\n";
 		return negative_child->compare_nodes(node->negative_child) && positive_child->compare_nodes(node->positive_child);
 	}
-	else 
+	else
 	{
 		//std::cout << "NOPE\n" << *node->cut << "\n";
 		//std::cout << *cut << "\n";
@@ -70,3 +68,18 @@ double Node::priority()
 
 	return cut->priority();
 }
+
+void Node::set_children(Node* negative_ch, Node* positive_ch) 
+{
+	negative_child = negative_ch;
+	negative_child->parent = this;
+	positive_child = positive_ch;
+	positive_child->parent = this;
+}
+
+void Node::set_props(Cut* new_cut, Node* negative_ch, Node* positive_ch) 
+{
+	cut = new_cut;
+	set_children(negative_ch, positive_ch);
+}
+
